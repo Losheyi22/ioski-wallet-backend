@@ -24,7 +24,7 @@ let storedOTP = null;
 let otpExpiry = null;
 
 /* =========================
-   ENV DEBUG
+   ENV CHECK
 ========================= */
 console.log("EMAIL_USER:", process.env.EMAIL_USER ? "Loaded ✅" : "Missing ❌");
 console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "Loaded ✅" : "Missing ❌");
@@ -40,7 +40,6 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-/* VERIFY EMAIL */
 transporter.verify((error) => {
   if (error) {
     console.log("❌ Gmail NOT ready:", error.message);
@@ -50,7 +49,7 @@ transporter.verify((error) => {
 });
 
 /* =========================
-   DEMO USER (LOGIN FIX)
+   DEMO USER LOGIN
 ========================= */
 const demoUser = {
   username: "jason",
@@ -60,7 +59,7 @@ const demoUser = {
 };
 
 /* =========================
-   LOGIN ROUTE (FIXED)
+   LOGIN ROUTE
 ========================= */
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
@@ -122,8 +121,6 @@ app.post("/send-otp", async (req, res) => {
     });
 
   } catch (err) {
-    console.log("❌ Email error:", err.message);
-
     return res.json({
       success: false,
       message: "Failed to send OTP",
