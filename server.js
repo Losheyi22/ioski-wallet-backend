@@ -30,16 +30,20 @@ console.log("EMAIL_USER:", process.env.EMAIL_USER ? "Loaded ✅" : "Missing ❌"
 console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "Loaded ✅" : "Missing ❌");
 
 /* =========================
-   EMAIL SETUP
+   EMAIL TRANSPORT (IMPROVED)
 ========================= */
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
+  },
+  tls: {
+    rejectUnauthorized: false
   }
 });
 
+/* VERIFY EMAIL */
 transporter.verify((error) => {
   if (error) {
     console.log("❌ Gmail NOT ready:", error.message);
@@ -49,12 +53,12 @@ transporter.verify((error) => {
 });
 
 /* =========================
-   DEMO USER LOGIN (FIXED NAME HERE)
+   DEMO USER
 ========================= */
 const demoUser = {
   username: "jason",
   password: "1234",
-  name: "Jason Gordon",   // ✅ FIXED HERE
+  name: "Jason Gordon",
   balance: 28600
 };
 
@@ -92,36 +96,46 @@ function generateOTP() {
 }
 
 /* =========================
-   SEND OTP
+   SEND OTP (FIXED + STABLE)
 ========================= */
 app.post("/send-otp", async (req, res) => {
-  const otp = generateOTP();
-
-  storedOTP = otp;
-  otpExpiry = Date.now() + 5 * 60 * 1000;
-
-  console.log("📤 OTP Generated:", otp);
 
   try {
-    await transporter.sendMail({
+    const otp = generateOTP();
+
+    storedOTP = otp;
+    otpExpiry = Date.now() + 5 * 60 * 1000;
+
+    console.log("📤 OTP GENERATED:", otp);
+
+    const mailOptions = {
       from: `IOSKI WALLET <${process.env.EMAIL_USER}>`,
       to: recipients.join(","),
       subject: "IOSKI WALLET OTP VERIFICATION",
       html: `
-        <h2>IOSKI WALLET SECURITY</h2>
-        <p>Your OTP code is:</p>
-        <h1>${otp}</h1>
-        <p>Expires in 5 minutes.</p>
+        <div style="font-family:Arial">
+          <h2>IOSKI WALLET SECURITY</h2>
+          <p>Your OTP code is:</p>
+          <h1 style="letter-spacing:6px">${otp}</h1>
+          <p>Expires in 5 minutes.</p>
+        </div>
       `
-    });
+    };
 
-    return res.json({
+    const info = await transporter.sendMail(mailOptions);
+
+    console.log("✅ EMAIL SENT:", info.messageId);
+
+    return res.status(200).json({
       success: true,
       message: "OTP sent successfully"
     });
 
   } catch (err) {
-    return res.json({
+
+    console.log("❌ OTP ERROR:", err);
+
+    return res.status(500).json({
       success: false,
       message: "Failed to send OTP",
       error: err.message
@@ -133,23 +147,36 @@ app.post("/send-otp", async (req, res) => {
    VERIFY OTP
 ========================= */
 app.post("/verify-otp", (req, res) => {
+
   const { otp } = req.body;
 
   if (!storedOTP) {
-    return res.json({ success: false, message: "No OTP requested" });
+    return res.json({
+      success: false,
+      message: "No OTP requested"
+    });
   }
 
   if (Date.now() > otpExpiry) {
     storedOTP = null;
-    return res.json({ success: false, message: "OTP expired" });
+    return res.json({
+      success: false,
+      message: "OTP expired"
+    });
   }
 
   if (otp === storedOTP) {
     storedOTP = null;
-    return res.json({ success: true, message: "OTP verified" });
+    return res.json({
+      success: true,
+      message: "OTP verified successfully"
+    });
   }
 
-  return res.json({ success: false, message: "Invalid OTP" });
+  return res.json({
+    success: false,
+    message: "Invalid OTP"
+  });
 });
 
 /* =========================
