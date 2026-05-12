@@ -6,32 +6,27 @@ require("dotenv").config();
 
 const app = express();
 
-/* =========================
-   MIDDLEWARE
-========================= */
 app.use(cors({ origin: "*" }));
 app.use(bodyParser.json());
 
-/* =========================
-   PORT
-========================= */
 const PORT = process.env.PORT || 3000;
 
-/* =========================
-   OTP STORAGE
-========================= */
+/* OTP STORAGE */
 let storedOTP = null;
 let otpExpiry = null;
 
-/* =========================
-   ENV CHECK
-========================= */
-console.log("EMAIL_USER:", process.env.EMAIL_USER ? "Loaded ✅" : "Missing ❌");
-console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "Loaded ✅" : "Missing ❌");
+/* ENV CHECK */
+console.log(
+  "EMAIL_USER:",
+  process.env.EMAIL_USER ? "Loaded ✅" : "Missing ❌"
+);
 
-/* =========================
-   EMAIL TRANSPORT (FIXED)
-========================= */
+console.log(
+  "EMAIL_PASS:",
+  process.env.EMAIL_PASS ? "Loaded ✅" : "Missing ❌"
+);
+
+/* EMAIL SETUP */
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 587,
@@ -40,9 +35,10 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
+  family: 4,
+  connectionTimeout: 20000,
+  greetingTimeout: 20000,
+  socketTimeout: 20000,
   tls: {
     rejectUnauthorized: false
   }
@@ -57,9 +53,7 @@ transporter.verify((error) => {
   }
 });
 
-/* =========================
-   DEMO USER
-========================= */
+/* DEMO USER */
 const demoUser = {
   username: "jason",
   password: "1234",
@@ -67,10 +61,9 @@ const demoUser = {
   balance: 28600
 };
 
-/* =========================
-   LOGIN
-========================= */
+/* LOGIN */
 app.post("/login", (req, res) => {
+
   const { username, password } = req.body;
 
   if (
@@ -86,28 +79,23 @@ app.post("/login", (req, res) => {
   return res.status(401).json({
     message: "Invalid login"
   });
+
 });
 
-/* =========================
-   OTP RECIPIENTS
-========================= */
+/* OTP RECIPIENTS */
 const recipients = [
   "gordon.jw314@gmail.com",
   "bryang120611@gmail.com"
 ];
 
-/* =========================
-   GENERATE OTP
-========================= */
+/* GENERATE OTP */
 function generateOTP() {
   return Math.floor(
     100000 + Math.random() * 900000
   ).toString();
 }
 
-/* =========================
-   SEND OTP
-========================= */
+/* SEND OTP */
 app.post("/send-otp", async (req, res) => {
 
   try {
@@ -149,9 +137,7 @@ app.post("/send-otp", async (req, res) => {
 
 });
 
-/* =========================
-   VERIFY OTP
-========================= */
+/* VERIFY OTP */
 app.post("/verify-otp", (req, res) => {
 
   const { otp } = req.body;
@@ -171,6 +157,7 @@ app.post("/verify-otp", (req, res) => {
       success: false,
       message: "OTP expired"
     });
+
   }
 
   if (otp === storedOTP) {
@@ -181,6 +168,7 @@ app.post("/verify-otp", (req, res) => {
       success: true,
       message: "OTP verified"
     });
+
   }
 
   return res.json({
@@ -190,16 +178,12 @@ app.post("/verify-otp", (req, res) => {
 
 });
 
-/* =========================
-   HEALTH
-========================= */
+/* HEALTH */
 app.get("/", (req, res) => {
-  res.send("Backend running 🚀");
+  res.send("IOSKI backend running 🚀");
 });
 
-/* =========================
-   START
-========================= */
+/* START */
 app.listen(PORT, () => {
   console.log(`🚀 Running on ${PORT}`);
 });
