@@ -49,12 +49,12 @@ transporter.verify((error) => {
 });
 
 /* =========================
-   DEMO USER LOGIN
+   DEMO USER LOGIN (FIXED NAME HERE)
 ========================= */
 const demoUser = {
   username: "jason",
   password: "1234",
-  name: "Jason",
+  name: "Jason Gordon",   // ✅ FIXED HERE
   balance: 28600
 };
 
