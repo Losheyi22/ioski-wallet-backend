@@ -30,25 +30,30 @@ console.log("EMAIL_USER:", process.env.EMAIL_USER ? "Loaded ✅" : "Missing ❌"
 console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "Loaded ✅" : "Missing ❌");
 
 /* =========================
-   EMAIL TRANSPORT (IMPROVED)
+   EMAIL TRANSPORT (FIXED)
 ========================= */
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
   tls: {
     rejectUnauthorized: false
   }
 });
 
-/* VERIFY EMAIL */
+/* VERIFY */
 transporter.verify((error) => {
   if (error) {
-    console.log("❌ Gmail NOT ready:", error.message);
+    console.log("❌ MAIL ERROR:", error.message);
   } else {
-    console.log("📩 Gmail is ready to send emails");
+    console.log("📩 Gmail ready");
   }
 });
 
@@ -63,12 +68,15 @@ const demoUser = {
 };
 
 /* =========================
-   LOGIN ROUTE
+   LOGIN
 ========================= */
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
-  if (username === demoUser.username && password === demoUser.password) {
+  if (
+    username === demoUser.username &&
+    password === demoUser.password
+  ) {
     return res.json({
       name: demoUser.name,
       balance: demoUser.balance
@@ -81,7 +89,7 @@ app.post("/login", (req, res) => {
 });
 
 /* =========================
-   RECIPIENTS
+   OTP RECIPIENTS
 ========================= */
 const recipients = [
   "gordon.jw314@gmail.com",
@@ -89,58 +97,56 @@ const recipients = [
 ];
 
 /* =========================
-   OTP GENERATOR
+   GENERATE OTP
 ========================= */
 function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return Math.floor(
+    100000 + Math.random() * 900000
+  ).toString();
 }
 
 /* =========================
-   SEND OTP (FIXED + STABLE)
+   SEND OTP
 ========================= */
 app.post("/send-otp", async (req, res) => {
 
   try {
+
     const otp = generateOTP();
 
     storedOTP = otp;
-    otpExpiry = Date.now() + 5 * 60 * 1000;
+    otpExpiry = Date.now() + 300000;
 
-    console.log("📤 OTP GENERATED:", otp);
+    console.log("📤 OTP:", otp);
 
-    const mailOptions = {
-      from: `IOSKI WALLET <${process.env.EMAIL_USER}>`,
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
       to: recipients.join(","),
-      subject: "IOSKI WALLET OTP VERIFICATION",
+      subject: "IOSKI OTP",
       html: `
-        <div style="font-family:Arial">
-          <h2>IOSKI WALLET SECURITY</h2>
-          <p>Your OTP code is:</p>
-          <h1 style="letter-spacing:6px">${otp}</h1>
-          <p>Expires in 5 minutes.</p>
-        </div>
+        <h2>OTP Verification</h2>
+        <h1>${otp}</h1>
+        <p>Expires in 5 minutes</p>
       `
-    };
+    });
 
-    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ OTP SENT");
 
-    console.log("✅ EMAIL SENT:", info.messageId);
-
-    return res.status(200).json({
-      success: true,
-      message: "OTP sent successfully"
+    return res.json({
+      success: true
     });
 
   } catch (err) {
 
-    console.log("❌ OTP ERROR:", err);
+    console.log("❌ OTP ERROR:", err.message);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to send OTP",
       error: err.message
     });
+
   }
+
 });
 
 /* =========================
@@ -158,7 +164,9 @@ app.post("/verify-otp", (req, res) => {
   }
 
   if (Date.now() > otpExpiry) {
+
     storedOTP = null;
+
     return res.json({
       success: false,
       message: "OTP expired"
@@ -166,10 +174,12 @@ app.post("/verify-otp", (req, res) => {
   }
 
   if (otp === storedOTP) {
+
     storedOTP = null;
+
     return res.json({
       success: true,
-      message: "OTP verified successfully"
+      message: "OTP verified"
     });
   }
 
@@ -177,18 +187,19 @@ app.post("/verify-otp", (req, res) => {
     success: false,
     message: "Invalid OTP"
   });
+
 });
 
 /* =========================
-   HEALTH CHECK
+   HEALTH
 ========================= */
 app.get("/", (req, res) => {
-  res.send("IOSKI backend running 🚀");
+  res.send("Backend running 🚀");
 });
 
 /* =========================
-   START SERVER
+   START
 ========================= */
 app.listen(PORT, () => {
-  console.log(`🚀 IOSKI backend running on port ${PORT}`);
+  console.log(`🚀 Running on ${PORT}`);
 });
